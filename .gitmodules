@@ -1,0 +1,18 @@
+[submodule "modules/cohear"]
+	path = modules/cohear
+	url = git@github.com:funkey/cohear
+[submodule "modules/scopegraph"]
+	path = modules/scopegraph
+	url = git@github.com:funkey/scopegraph
+[submodule "modules/sg_gui"]
+	path = modules/sg_gui
+	url = git@github.com:funkey/sg_gui
+[submodule "modules/imageprocessing"]
+	path = modules/imageprocessing
+	url = git@github.com:funkey/imageprocessing
+[submodule "modules/util"]
+	path = modules/util
+	url = git@github.com:funkey/util
+[submodule "cmake"]
+	path = cmake
+	url = git@github.com:funkey/cmake
