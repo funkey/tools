@@ -29,6 +29,10 @@ ExplicitVolume<T> readVolume(std::vector<std::string> filenames) {
 			vigra::ImageImportInfo info = vigra::ImageImportInfo(filenames[z].c_str());
 			importImage(info, volume.data().template bind<2>(z));
 
+			std::cout << "pixel type of " << filenames[z] << " is " << info.getPixelType() << std::endl;
+			if (std::string(info.getPixelType()) == "UINT8")
+				volume.data() *= 1.0/255.0;
+
 		} catch (std::exception& e) {
 
 			UTIL_THROW_EXCEPTION(
