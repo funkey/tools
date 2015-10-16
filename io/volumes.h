@@ -30,8 +30,14 @@ ExplicitVolume<T> readVolume(std::vector<std::string> filenames) {
 			importImage(info, volume.data().template bind<2>(z));
 
 			std::cout << "pixel type of " << filenames[z] << " is " << info.getPixelType() << std::endl;
+			T min, max;
+			volume.data().template bind<2>(z).minmax(&min, &max);
+			std::cout << "min/max of " << filenames[z] << " is " << min << "/" << max << std::endl;
 			if (std::string(info.getPixelType()) == "UINT8")
-				volume.data() *= 1.0/255.0;
+				volume.data().template bind<2>(z) *= 1.0/255.0;
+
+			volume.data().template bind<2>(z).minmax(&min, &max);
+			std::cout << "after normalizing, min/max of " << filenames[z] << " is " << min << "/" << max << std::endl;
 
 		} catch (std::exception& e) {
 
