@@ -37,8 +37,10 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 
 	} else {
 
-		showSingleMesh(label);
+		addMesh(label);
 	}
+
+	send<sg_gui::SetMeshes>(_meshes);
 }
 
 void
@@ -54,7 +56,8 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 		try {
 
 			float label = boost::lexical_cast<float>(input);
-			showSingleMesh(label);
+			addMesh(label);
+			send<sg_gui::SetMeshes>(_meshes);
 
 		} catch (std::exception& e) {
 
@@ -65,19 +68,9 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 }
 
 void
-MeshViewController::showSingleMesh(float label) {
+MeshViewController::addMesh(float label) {
 
 	LOG_USER(meshviewcontrollerlog) << "showing label " << label << std::endl;
-
-	_meshes->clear();
-
-	addMesh(label);
-
-	send<sg_gui::SetMeshes>(_meshes);
-}
-
-void
-MeshViewController::addMesh(float label) {
 
 	if (_meshCache.count(label)) {
 

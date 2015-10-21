@@ -73,8 +73,6 @@ private:
 
 	void prevNeighbor();
 
-	void showSingleMesh(float label);
-
 	void addMesh(float label);
 
 	void removeMesh(float label);
