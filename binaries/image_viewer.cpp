@@ -69,9 +69,9 @@ int main(int argc, char** argv) {
 
 				if (signal.key == sg_gui::keys::D)
 					_current = std::min((int)_images.size() - 1, _current + 1);
-
-				if (signal.key == sg_gui::keys::A)
+				else if (signal.key == sg_gui::keys::A)
 					_current = std::max(0, _current - 1);
+				else return;
 
 				send<sg_gui::SetImage>(_images[_current]);
 			}
@@ -82,14 +82,31 @@ int main(int argc, char** argv) {
 			int _current;
 		};
 
-		class Logger : public sg::Agent<Logger, sg::Accepts<sg_gui::SetImage>> {
+		class Logger : public sg::Agent<Logger, sg::Accepts<sg_gui::SetImage, sg_gui::MouseDown>> {
 
 		public:
 
 			void onSignal(sg_gui::SetImage& signal) {
 
 				std::cout << "showing image " << signal.getImage()->getIdentifier() << std::endl;
+
+				_image = signal.getImage();
 			}
+
+			void onSignal(sg_gui::MouseDown& signal) {
+
+				if (!_image || signal.button != sg_gui::buttons::Left)
+					return;
+
+				util::point<int, 2> pos = signal.ray.position().project<2>();
+
+				if (_image->getBoundingBox().contains(pos))
+					std::cout << "value at " << pos << ": " << (*_image)(pos.x(), pos.y()) << std::endl;
+			}
+
+		private:
+
+			std::shared_ptr<Image> _image;
 		};
 
 		// visualize
