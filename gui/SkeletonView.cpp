@@ -2,6 +2,7 @@
 #include <sg_gui/OpenGl.h>
 #include <sg_gui/Colors.h>
 #include <util/ProgramOptions.h>
+#include <util/Logger.h>
 
 util::ProgramOption optionSkeletonSphereScale(
 		util::_module           = "gui",
@@ -10,8 +11,16 @@ util::ProgramOption optionSkeletonSphereScale(
 		util::_default_value    = 1.0);
 
 SkeletonView::SkeletonView() :
+	_currentScoreIndex(0),
+	_invertScores(false),
 	_sphere(10),
-	_sphereScale(optionSkeletonSphereScale) {}
+	_showSpheres(false),
+	_sphereScale(optionSkeletonSphereScale),
+	_ftfont("test.ttf") {
+
+	_ftfont.FaceSize(100);
+	_ftfont.CharMap(ft_encoding_unicode);
+}
 
 void
 SkeletonView::setSkeletons(std::shared_ptr<Skeletons> skeletons) {
@@ -29,6 +38,15 @@ SkeletonView::onSignal(sg_gui::Draw& /*draw*/) {
 		return;
 
 	draw();
+}
+
+void
+SkeletonView::onSignal(sg_gui::DrawTranslucent& /*draw*/) {
+
+	if (!_skeletons)
+		return;
+
+	drawTranslucent();
 }
 
 void
@@ -63,6 +81,38 @@ SkeletonView::onSignal(sg_gui::MouseDown& signal) {
 }
 
 void
+SkeletonView::onSignal(sg_gui::KeyDown& signal) {
+
+	if (signal.key == sg_gui::keys::S) {
+
+		_showSpheres = !_showSpheres;
+		updateRecording();
+		send<sg_gui::ContentChanged>();
+	}
+
+	if (signal.key == sg_gui::keys::A) {
+
+		_currentScoreIndex = std::max(0, _currentScoreIndex - 1);
+		updateRecording();
+		send<sg_gui::ContentChanged>();
+	}
+
+	if (signal.key == sg_gui::keys::D) {
+
+		_currentScoreIndex = std::min((int)_edgeMatchScores.size() - 1, _currentScoreIndex + 1);
+		updateRecording();
+		send<sg_gui::ContentChanged>();
+	}
+
+	if (signal.key == sg_gui::keys::I) {
+
+		_invertScores = !_invertScores;
+		updateRecording();
+		send<sg_gui::ContentChanged>();
+	}
+}
+
+void
 SkeletonView::onSignal(SetSkeletons& signal) {
 
 	setSkeletons(signal.getSkeletons());
@@ -88,6 +138,13 @@ SkeletonView::updateRecording() {
 
 		drawSkeleton(*skeleton);
 	}
+
+	stopRecording();
+
+	startRecordingTranslucent();
+
+	if (_edgeMatchScores.size() > 0)
+		drawEdgeMatchScores(*_edgeMatchScores[_currentScoreIndex]);
 
 	stopRecording();
 }
@@ -116,13 +173,80 @@ SkeletonView::drawSkeleton(const Skeleton& skeleton) {
 		skeleton.getRealLocation(pu, ru);
 		skeleton.getRealLocation(pv, rv);
 
-		float diameter = skeleton.diameters()[u];
-		drawSphere(ru, diameter*_sphereScale);
+		if (_showSpheres) {
+
+			float diameter = skeleton.diameters()[u];
+			drawSphere(ru, diameter*_sphereScale);
+		}
 
 		glBegin(GL_LINES);
 		glVertex3d(ru.x(), ru.y(), ru.z());
 		glVertex3d(rv.x(), rv.y(), rv.z());
 		glEnd();
+	}
+}
+
+void
+SkeletonView::drawEdgeMatchScores(const SkeletonEdgeMatchScores& scores) {
+
+	LOG_USER(logger::out) << "showing matching scores " << scores.getName() << std::endl;
+
+	const Skeleton& a = *scores.getSource();
+	const Skeleton& b = *scores.getTarget();
+
+	double maxScore = scores.getMaxScore();
+
+	for (Skeleton::Graph::EdgeIt e(a.graph()); e != lemon::INVALID; ++e) {
+
+		Skeleton::Node au = a.graph().u(e);
+		Skeleton::Node av = a.graph().v(e);
+
+		Skeleton::Position apu = a.positions()[au];
+		Skeleton::Position apv = a.positions()[av];
+
+		util::point<float,3> aru;
+		util::point<float,3> arv;
+		a.getRealLocation(apu, aru);
+		a.getRealLocation(apv, arv);
+
+		util::point<float,3> acenter = (aru + arv)/2.0;
+
+		for (Skeleton::Graph::EdgeIt f(b.graph()); f != lemon::INVALID; ++f) {
+
+			Skeleton::Node bu = b.graph().u(f);
+			Skeleton::Node bv = b.graph().v(f);
+
+			Skeleton::Position bpu = b.positions()[bu];
+			Skeleton::Position bpv = b.positions()[bv];
+
+			util::point<float,3> bru;
+			util::point<float,3> brv;
+			b.getRealLocation(bpu, bru);
+			b.getRealLocation(bpv, brv);
+
+			util::point<float,3> bcenter = (bru + brv)/2.0;
+
+			double score = scores.getScore(a.graph().id(e), b.graph().id(f));
+			double s = score;
+			if (_invertScores)
+				s = maxScore - score;
+
+			glLineWidth(std::max(1.0, 10*s/maxScore));
+			glEnable(GL_LINE_SMOOTH);
+			glBegin(GL_LINES);
+			glColor4f(0, 0, 0, 0.5*s/maxScore);
+			glVertex3d(acenter.x(), acenter.y(), acenter.z());
+			glVertex3d(bcenter.x(), bcenter.y(), bcenter.z());
+			glEnd();
+
+			glColor4f(0.5, 0.5, 1, 1);
+			util::point<float,3> middle = (acenter + bcenter)/2.0;
+			glPushMatrix();
+			glTranslatef(middle.x(), middle.y(), middle.z());
+			glScalef(0.01, -0.01, 0.01);
+			_ftfont.Render(boost::lexical_cast<std::string>(score).c_str());
+			glPopMatrix();
+		}
 	}
 }
 

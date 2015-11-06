@@ -1,1 +1,1 @@
-define_module(gui OBJECT LINKS sg_gui)
+define_module(gui OBJECT LINKS sg_gui freetype ftgl)

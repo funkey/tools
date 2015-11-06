@@ -21,6 +21,15 @@ util::ProgramOption optionSkeleton(
 		util::_long_name        = "skeleton",
 		util::_description_text = "The skeleton to show.");
 
+util::ProgramOption optionCompareSkeleton(
+		util::_long_name        = "compare",
+		util::_description_text = "Another skeleton to show for comparison.");
+
+util::ProgramOption optionEdgeMatchScores(
+		util::_long_name        = "edgeMatchScores",
+		util::_description_text = "A file containing edge match scores between the two skeletons as lines of <e> <f> <score>. "
+		                          "If a directory is provided, load all score files in there.");
+
 util::ProgramOption optionVolume(
 		util::_long_name        = "volume",
 		util::_description_text = "The volume to show around the skeleton.");
@@ -64,6 +73,13 @@ int main(int argc, char** argv) {
 		std::shared_ptr<Skeletons> skeletons = std::make_shared<Skeletons>();
 		skeletons->add(1, skeleton);
 
+		if (optionCompareSkeleton) {
+
+			std::shared_ptr<Skeleton> compare = std::make_shared<Skeleton>();
+			readSkeleton(optionCompareSkeleton, *compare);
+			skeletons->add(2, compare);
+		}
+
 		// visualize
 
 		auto skeletonView = std::make_shared<SkeletonView>();
@@ -76,6 +92,18 @@ int main(int argc, char** argv) {
 		rotateView->add(skeletonView);
 
 		skeletonView->setSkeletons(skeletons);
+
+		if (optionEdgeMatchScores) {
+
+			LOG_USER(logger::out) << "reading edge match scores from " << optionEdgeMatchScores.as<std::string>() << std::endl;
+
+			std::vector<std::shared_ptr<SkeletonEdgeMatchScores>> scores = readEdgeMatchScores(optionEdgeMatchScores.as<std::string>());
+			for (auto s : scores) {
+				s->setSource(skeletons->get(1));
+				s->setTarget(skeletons->get(2));
+			}
+			skeletonView->setEdgeMatchScores(scores);
+		}
 
 		if (volume) {
 
