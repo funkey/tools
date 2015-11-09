@@ -80,6 +80,8 @@ private:
 
 	void drawSphere(const util::point<float,3>& center, float diameter);
 
+	void findClosestEdge(const util::ray<float,3>& ray);
+
 	std::shared_ptr<Skeletons> _skeletons;
 
 	std::vector<std::shared_ptr<SkeletonEdgeMatchScores>> _edgeMatchScores;
@@ -87,10 +89,13 @@ private:
 	int  _currentScoreIndex;
 	bool _invertScores;
 
-	sg_gui::Sphere _sphere;
+	bool                      _showFocus;
+	std::shared_ptr<Skeleton> _focusSkeleton;
+	Skeleton::Graph::Edge     _focusEdge;
 
-	bool _showSpheres;
-	float _sphereScale;
+	sg_gui::Sphere _sphere;
+	bool           _showSpheres;
+	float          _sphereScale;
 
 	FTTextureFont _ftfont;
 };

@@ -3,6 +3,7 @@
 #include <sg_gui/Colors.h>
 #include <util/ProgramOptions.h>
 #include <util/Logger.h>
+#include <util/geometry.hpp>
 
 util::ProgramOption optionSkeletonSphereScale(
 		util::_module           = "gui",
@@ -13,6 +14,7 @@ util::ProgramOption optionSkeletonSphereScale(
 SkeletonView::SkeletonView() :
 	_currentScoreIndex(0),
 	_invertScores(false),
+	_showFocus(false),
 	_sphere(10),
 	_showSpheres(false),
 	_sphereScale(optionSkeletonSphereScale),
@@ -74,6 +76,14 @@ SkeletonView::onSignal(sg_gui::MouseDown& signal) {
 			_sphereScale = std::max(0.1, _sphereScale*(1.0/1.1));
 			signal.processed = true;
 		}
+
+		updateRecording();
+		send<sg_gui::ContentChanged>();
+	}
+
+	if (signal.button == sg_gui::buttons::Right) {
+
+		findClosestEdge(signal.ray);
 
 		updateRecording();
 		send<sg_gui::ContentChanged>();
@@ -198,6 +208,10 @@ SkeletonView::drawEdgeMatchScores(const SkeletonEdgeMatchScores& scores) {
 
 	for (Skeleton::Graph::EdgeIt e(a.graph()); e != lemon::INVALID; ++e) {
 
+		if (_showFocus)
+			if (scores.getSource() == _focusSkeleton && e != _focusEdge)
+				continue;
+
 		Skeleton::Node au = a.graph().u(e);
 		Skeleton::Node av = a.graph().v(e);
 
@@ -212,6 +226,10 @@ SkeletonView::drawEdgeMatchScores(const SkeletonEdgeMatchScores& scores) {
 		util::point<float,3> acenter = (aru + arv)/2.0;
 
 		for (Skeleton::Graph::EdgeIt f(b.graph()); f != lemon::INVALID; ++f) {
+
+			if (_showFocus)
+				if (scores.getTarget() == _focusSkeleton && f != _focusEdge)
+					continue;
 
 			Skeleton::Node bu = b.graph().u(f);
 			Skeleton::Node bv = b.graph().v(f);
@@ -234,7 +252,7 @@ SkeletonView::drawEdgeMatchScores(const SkeletonEdgeMatchScores& scores) {
 			glLineWidth(std::max(1.0, 10*s/maxScore));
 			glEnable(GL_LINE_SMOOTH);
 			glBegin(GL_LINES);
-			glColor4f(0, 0, 0, 0.5*s/maxScore);
+			glColor4f(0, 0, 0, 0.25 + 0.5*s/maxScore);
 			glVertex3d(acenter.x(), acenter.y(), acenter.z());
 			glVertex3d(bcenter.x(), bcenter.y(), bcenter.z());
 			glEnd();
@@ -276,4 +294,62 @@ SkeletonView::drawSphere(const util::point<float,3>& center, float diameter) {
 	glEnd();
 
 	glPopMatrix();
+}
+
+void
+SkeletonView::findClosestEdge(const util::ray<float,3>& ray) {
+
+	std::shared_ptr<Skeleton> closestSkeleton;
+	unsigned int closestSkeletonId;
+	Skeleton::Graph::Edge closestEdge;
+
+	float minSkeletonDistance = std::numeric_limits<float>::max();
+
+	for (unsigned int id : _skeletons->getSkeletonIds()) {
+
+		const Skeleton& skeleton = *_skeletons->get(id);
+
+		float minDistance = std::numeric_limits<float>::max();
+		Skeleton::Graph::Edge bestEdge;
+
+		for (Skeleton::Graph::EdgeIt e(skeleton.graph()); e != lemon::INVALID; ++e) {
+
+			Skeleton::Node su = skeleton.graph().u(e);
+			Skeleton::Node sv = skeleton.graph().v(e);
+
+			Skeleton::Position spu = skeleton.positions()[su];
+			Skeleton::Position spv = skeleton.positions()[sv];
+
+			util::point<float,3> sru;
+			util::point<float,3> srv;
+			skeleton.getRealLocation(spu, sru);
+			skeleton.getRealLocation(spv, srv);
+
+			util::ray<float,3> edgeRay(sru, srv - sru);
+
+			float s, t;
+			float dist = distance(ray, edgeRay, s, t);
+			std::cout << t << std::endl;
+			if (t >= 0 && t <= 1 && dist < minDistance) {
+
+				minDistance = dist;
+				bestEdge = e;
+			}
+		}
+
+		if (minDistance < minSkeletonDistance) {
+
+			minSkeletonDistance = minDistance;
+			closestSkeleton = _skeletons->get(id);
+			closestSkeletonId = id;
+			closestEdge = bestEdge;
+		}
+	}
+
+	_focusSkeleton = closestSkeleton;
+	_focusEdge = closestEdge;
+	_showFocus = (minSkeletonDistance < std::numeric_limits<float>::max());
+
+	if (_showFocus)
+		LOG_USER(logger::out) << "[SkeletonView] showing edge " << closestSkeleton->graph().id(_focusEdge) << " of skeleton " << closestSkeletonId << std::endl;
 }
