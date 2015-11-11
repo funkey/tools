@@ -18,7 +18,7 @@ SkeletonView::SkeletonView() :
 	_sphere(10),
 	_showSpheres(false),
 	_sphereScale(optionSkeletonSphereScale),
-	_ftfont("test.ttf") {
+	_ftfont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf") {
 
 	_ftfont.FaceSize(100);
 	_ftfont.CharMap(ft_encoding_unicode);
