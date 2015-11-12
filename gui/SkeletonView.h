@@ -93,6 +93,9 @@ private:
 	std::shared_ptr<Skeleton> _focusSkeleton;
 	Skeleton::Graph::Edge     _focusEdge;
 
+	bool _showNumbers;
+	bool _showZeroLines;
+
 	sg_gui::Sphere _sphere;
 	bool           _showSpheres;
 	float          _sphereScale;

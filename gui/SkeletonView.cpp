@@ -15,6 +15,8 @@ SkeletonView::SkeletonView() :
 	_currentScoreIndex(0),
 	_invertScores(false),
 	_showFocus(false),
+	_showNumbers(true),
+	_showZeroLines(true),
 	_sphere(10),
 	_showSpheres(false),
 	_sphereScale(optionSkeletonSphereScale),
@@ -117,6 +119,20 @@ SkeletonView::onSignal(sg_gui::KeyDown& signal) {
 	if (signal.key == sg_gui::keys::I) {
 
 		_invertScores = !_invertScores;
+		updateRecording();
+		send<sg_gui::ContentChanged>();
+	}
+
+	if (signal.key == sg_gui::keys::N) {
+
+		_showNumbers = !_showNumbers;
+		updateRecording();
+		send<sg_gui::ContentChanged>();
+	}
+
+	if (signal.key == sg_gui::keys::Z) {
+
+		_showZeroLines= !_showZeroLines;
 		updateRecording();
 		send<sg_gui::ContentChanged>();
 	}
@@ -252,18 +268,21 @@ SkeletonView::drawEdgeMatchScores(const SkeletonEdgeMatchScores& scores) {
 			glLineWidth(std::max(1.0, 10*s/maxScore));
 			glEnable(GL_LINE_SMOOTH);
 			glBegin(GL_LINES);
-			glColor4f(0, 0, 0, 0.25 + 0.5*s/maxScore);
+			glColor4f(0, 0, 0, 0.25*_showZeroLines + 0.5*s/maxScore);
 			glVertex3d(acenter.x(), acenter.y(), acenter.z());
 			glVertex3d(bcenter.x(), bcenter.y(), bcenter.z());
 			glEnd();
 
-			glColor4f(0.5, 0.5, 1, 1);
-			util::point<float,3> middle = (acenter + bcenter)/2.0;
-			glPushMatrix();
-			glTranslatef(middle.x(), middle.y(), middle.z());
-			glScalef(0.01, -0.01, 0.01);
-			_ftfont.Render(boost::lexical_cast<std::string>(score).c_str());
-			glPopMatrix();
+			if (_showNumbers) {
+
+				glColor4f(0.5, 0.5, 1, 1);
+				util::point<float,3> middle = (acenter + bcenter)/2.0;
+				glPushMatrix();
+				glTranslatef(middle.x(), middle.y(), middle.z());
+				glScalef(0.01, -0.01, 0.01);
+				_ftfont.Render(boost::lexical_cast<std::string>(score).c_str());
+				glPopMatrix();
+			}
 		}
 	}
 }
