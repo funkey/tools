@@ -11,6 +11,7 @@
 #include <sg_gui/ZoomView.h>
 #include <sg_gui/Window.h>
 #include <io/volumes.h>
+#include <io/Hdf5VolumeReader.h>
 
 using namespace sg_gui;
 
@@ -37,6 +38,28 @@ util::ProgramOption optionResZ(
 		util::_description_text = "z resolution of the volume.",
 		util::_default_value    = 1.0);
 
+void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
+
+	// hdf file given?
+	size_t sepPos = option.find_first_of(":");
+	if (sepPos != std::string::npos) {
+
+		std::string hdfFileName = option.substr(0, sepPos);
+		std::string dataset     = option.substr(sepPos + 1);
+
+		vigra::HDF5File file(hdfFileName, vigra::HDF5File::OpenMode::ReadOnly);
+		Hdf5VolumeReader hdfReader(file);
+		hdfReader.readVolume(volume, dataset);
+
+	// read volume from set of images
+	} else {
+
+		std::vector<std::string> files = getImageFiles(option);
+		volume = readVolume<float>(files);
+		volume.setResolution(util::point<float, 3>(optionResX, optionResY, optionResZ));
+	}
+}
+
 int main(int argc, char** argv) {
 
 	try {
@@ -46,18 +69,13 @@ int main(int argc, char** argv) {
 
 		// read volume and overlay
 
-		std::vector<std::string> files = getImageFiles(optionVolume.as<std::string>());
-		auto volume = std::make_shared<ExplicitVolume<float>>();
-		*volume = readVolume<float>(files);
-		volume->setResolution(util::point<float, 3>(optionResX, optionResY, optionResZ));
-
+		auto volume  = std::make_shared<ExplicitVolume<float>>();
 		auto overlay = std::make_shared<ExplicitVolume<float>>();
-		if (optionOverlay) {
 
-			files = getImageFiles(optionOverlay.as<std::string>());
-			*overlay = readVolume<float>(files);
-			overlay->setResolution(util::point<float, 3>(optionResX, optionResY, optionResZ));
-		}
+		readVolumeFromOption(*volume, optionVolume);
+
+		if (optionOverlay)
+			readVolumeFromOption(*overlay, optionOverlay);
 
 		// visualize
 
