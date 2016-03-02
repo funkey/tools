@@ -20,6 +20,14 @@ util::ProgramOption optionVolume(
 		util::_description_text = "The volume to show.",
 		util::_is_positional    = true);
 
+util::ProgramOption optionNormalizeVolume(
+		util::_long_name        = "normalize",
+		util::_description_text = "Normalize the intensities of the volume to show. Does not change the overlay.");
+
+util::ProgramOption optionTranspose(
+		util::_long_name        = "transpose",
+		util::_description_text = "Invert the order of the axises, applies to both the volume and overlay.");
+
 util::ProgramOption optionOverlay(
 		util::_long_name        = "overlay",
 		util::_short_name       = "o",
@@ -74,8 +82,18 @@ int main(int argc, char** argv) {
 
 		readVolumeFromOption(*volume, optionVolume);
 
+		if (optionNormalizeVolume)
+			volume->normalize();
+
 		if (optionOverlay)
 			readVolumeFromOption(*overlay, optionOverlay);
+
+		if (optionTranspose) {
+
+			volume->transpose();
+			if (optionOverlay)
+				overlay->transpose();
+		}
 
 		// visualize
 
