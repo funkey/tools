@@ -59,6 +59,9 @@ void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
 		Hdf5VolumeReader hdfReader(file);
 		hdfReader.readVolume(volume, dataset);
 
+		if (optionResX || optionResY || optionResZ)
+			volume.setResolution(util::point<float, 3>(optionResX, optionResY, optionResZ));
+
 	// read volume from set of images
 	} else {
 
