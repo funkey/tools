@@ -35,16 +35,13 @@ util::ProgramOption optionOverlay(
 
 util::ProgramOption optionResX(
 		util::_long_name        = "resX",
-		util::_description_text = "x resolution of the volume.",
-		util::_default_value    = 1.0);
+		util::_description_text = "x resolution of the volume.");
 util::ProgramOption optionResY(
 		util::_long_name        = "resY",
-		util::_description_text = "y resolution of the volume.",
-		util::_default_value    = 1.0);
+		util::_description_text = "y resolution of the volume.");
 util::ProgramOption optionResZ(
 		util::_long_name        = "resZ",
-		util::_description_text = "z resolution of the volume.",
-		util::_default_value    = 1.0);
+		util::_description_text = "z resolution of the volume.");
 
 void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
 
@@ -67,7 +64,8 @@ void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
 
 		std::vector<std::string> files = getImageFiles(option);
 		volume = readVolume<float>(files);
-		volume.setResolution(util::point<float, 3>(optionResX, optionResY, optionResZ));
+		if (optionResX || optionResY || optionResZ)
+			volume.setResolution(util::point<float, 3>(optionResX, optionResY, optionResZ));
 	}
 }
 
