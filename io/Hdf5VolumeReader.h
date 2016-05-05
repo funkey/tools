@@ -28,7 +28,8 @@ public:
 					dataset,
 					"resolution",
 					p);
-		volume.setResolution(p[0], p[1], p[2]);
+		// resolution is stored as (z,y,x) to conform to how dataset is stored
+		volume.setResolution(p[2], p[1], p[0]);
 
 		// offset
 		p[0] = p[1] = p[2] = 0.0;
@@ -37,7 +38,8 @@ public:
 					dataset,
 					"offset",
 					p);
-		volume.setOffset(p[0], p[1], p[2]);
+		// offset is stored as (z,y,x) to conform to how dataset is stored
+		volume.setOffset(p[2], p[1], p[0]);
 	}
 
 private:
