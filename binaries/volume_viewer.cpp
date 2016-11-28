@@ -4,13 +4,17 @@
 
 #include <util/ProgramOptions.h>
 #include <imageprocessing/ExplicitVolume.h>
+#include <imageprocessing/Skeleton.h>
+#include <imageprocessing/Skeletons.h>
 #include <gui/OverlayView.h>
 #include <gui/MeshViewController.h>
+#include <gui/SkeletonView.h>
 #include <sg_gui/MeshView.h>
 #include <sg_gui/RotateView.h>
 #include <sg_gui/ZoomView.h>
 #include <sg_gui/Window.h>
 #include <io/volumes.h>
+#include <io/skeletons.h>
 #include <io/Hdf5VolumeReader.h>
 
 using namespace sg_gui;
@@ -46,6 +50,10 @@ util::ProgramOption optionResY(
 util::ProgramOption optionResZ(
 		util::_long_name        = "resZ",
 		util::_description_text = "z resolution of the volume.");
+
+util::ProgramOption optionSkeleton(
+		util::_long_name        = "skeleton",
+		util::_description_text = "Path to a file containing a skeleton to show.");
 
 void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
 
@@ -84,6 +92,7 @@ int main(int argc, char** argv) {
 
 		auto volume  = std::make_shared<ExplicitVolume<float>>();
 		auto overlay = std::make_shared<ExplicitVolume<float>>();
+		auto skeletons = std::make_shared<Skeletons>();
 
 		readVolumeFromOption(*volume, optionVolume);
 
@@ -99,23 +108,37 @@ int main(int argc, char** argv) {
 		if (optionTransposeOverlay && optionOverlay)
 			overlay->transpose();
 
+		if (optionSkeleton) {
+
+			auto skeleton = std::make_shared<Skeleton>();
+			readSkeleton(optionSkeleton, *skeleton);
+			skeletons->add(1, skeleton);
+		}
+
 		// visualize
 
 		auto overlayView        = std::make_shared<OverlayView>();
 		auto meshView           = std::make_shared<MeshView>();
 		auto meshViewController = std::make_shared<MeshViewController>(overlay);
+		auto skeletonView       = std::make_shared<SkeletonView>();
 		auto rotateView         = std::make_shared<RotateView>();
 		auto zoomView           = std::make_shared<ZoomView>(true);
 		auto window             = std::make_shared<sg_gui::Window>("volume_viewer");
 
 		window->add(zoomView);
 		zoomView->add(rotateView);
-		rotateView->add(overlayView);
 
+		rotateView->add(overlayView);
 		overlayView->setRawVolume(volume);
 		overlayView->setLabelsVolume(overlay);
 		overlayView->add(meshView);
 		overlayView->add(meshViewController);
+
+		if (skeletons->size() > 0) {
+
+			rotateView->add(skeletonView);
+			skeletonView->setSkeletons(skeletons);
+		}
 
 		window->processEvents();
 
