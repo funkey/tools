@@ -81,6 +81,55 @@ void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
 	}
 }
 
+class Recorder : public sg::Agent<
+		 Recorder,
+		 sg::Accepts<sg_gui::ContentChanged, sg_gui::KeyDown>
+> {
+
+public:
+
+	Recorder(std::shared_ptr<sg_gui::Window> window) :
+		_window(window) {}
+
+	void onSignal(sg_gui::ContentChanged& signal) {
+
+		if (_continuous)
+			_window->requestNextFrameSave();
+	}
+
+	void onSignal(sg_gui::KeyDown& signal) {
+
+		if (signal.key == keys::F5) {
+
+			if (_continuous) {
+
+				std::cout << "[Recorder] stopping recording" << std::endl;
+				_continuous = false;
+				return;
+			}
+
+
+			if (signal.modifiers & keys::ShiftDown) {
+
+				std::cout << "[Recorder] starting recording" << std::endl;
+				_continuous = true;
+
+			} else {
+
+				std::cout << "[Recorder] taking screenshot" << std::endl;
+			}
+
+			_window->saveFrame();
+		}
+	}
+
+private:
+
+	std::shared_ptr<sg_gui::Window> _window;
+
+	bool _continuous;
+};
+
 int main(int argc, char** argv) {
 
 	try {
@@ -124,8 +173,10 @@ int main(int argc, char** argv) {
 		auto rotateView         = std::make_shared<RotateView>();
 		auto zoomView           = std::make_shared<ZoomView>(true);
 		auto window             = std::make_shared<sg_gui::Window>("volume_viewer");
+		auto recorder           = std::make_shared<Recorder>(window);
 
 		window->add(zoomView);
+		window->add(recorder);
 		zoomView->add(rotateView);
 
 		rotateView->add(overlayView);
