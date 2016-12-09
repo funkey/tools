@@ -27,12 +27,13 @@ int getMaxPrecision(const std::vector<float>& values) {
 	return maxPrecision;
 }
 
-void readSkeleton(const std::string& filename, Skeleton& skeleton) {
+size_t readSkeleton(const std::string& filename, Skeleton& skeleton) {
 
 	std::ifstream file(filename);
 
 	std::string token;
 	int numNodes = 0;
+	size_t id = 1;
 
 	while (file.good()) {
 
@@ -41,6 +42,11 @@ void readSkeleton(const std::string& filename, Skeleton& skeleton) {
 			break;
 
 		LOG_ALL(logger::out) << "read token " << token << std::endl;
+
+		if (token == "ID") {
+
+			file >> id;
+		}
 
 		if (token == "POINTS") {
 
@@ -126,6 +132,8 @@ void readSkeleton(const std::string& filename, Skeleton& skeleton) {
 	}
 
 	LOG_USER(logger::out) << "read skeleton with " << numNodes << " nodes" << std::endl;
+
+	return id;
 }
 
 std::vector<std::shared_ptr<SkeletonEdgeMatchScores>>

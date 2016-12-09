@@ -160,8 +160,8 @@ int main(int argc, char** argv) {
 		if (optionSkeleton) {
 
 			auto skeleton = std::make_shared<Skeleton>();
-			readSkeleton(optionSkeleton, *skeleton);
-			skeletons->add(1, skeleton);
+			size_t id = readSkeleton(optionSkeleton, *skeleton);
+			skeletons->add(id, skeleton);
 		}
 
 		// visualize
