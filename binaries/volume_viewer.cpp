@@ -3,6 +3,7 @@
  */
 
 #include <util/ProgramOptions.h>
+#include <util/string.h>
 #include <imageprocessing/ExplicitVolume.h>
 #include <imageprocessing/Skeleton.h>
 #include <imageprocessing/Skeletons.h>
@@ -53,7 +54,7 @@ util::ProgramOption optionResZ(
 
 util::ProgramOption optionSkeleton(
 		util::_long_name        = "skeleton",
-		util::_description_text = "Path to a file containing a skeleton to show.");
+		util::_description_text = "Paths to a files containing skeletons to show. Files are separated by colons.");
 
 void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
 
@@ -160,9 +161,13 @@ int main(int argc, char** argv) {
 
 		if (optionSkeleton) {
 
-			auto skeleton = std::make_shared<Skeleton>();
-			size_t id = readSkeleton(optionSkeleton, *skeleton);
-			skeletons->add(id, skeleton);
+			std::vector<std::string> files = split(optionSkeleton, ':');
+			for (std::string file : files) {
+
+				auto skeleton = std::make_shared<Skeleton>();
+				size_t id = readSkeleton(file, *skeleton);
+				skeletons->add(id, skeleton);
+			}
 		}
 
 		// visualize
