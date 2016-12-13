@@ -143,7 +143,8 @@ int main(int argc, char** argv) {
 		auto overlay = std::make_shared<ExplicitVolume<float>>();
 		auto skeletons = std::make_shared<Skeletons>();
 
-		readVolumeFromOption(*volume, optionVolume);
+		if (optionVolume)
+			readVolumeFromOption(*volume, optionVolume);
 
 		if (optionNormalizeVolume)
 			volume->normalize();
