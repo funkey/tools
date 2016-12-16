@@ -1,4 +1,5 @@
 #include <boost/filesystem.hpp>
+#include <util/Logger.h>
 #include "volumes.h"
 
 std::vector<std::string>
@@ -20,9 +21,17 @@ getImageFiles(std::string path) {
 
 		std::sort(filenames.begin(), filenames.end());
 
-	} else {
+	} else if (boost::filesystem::is_regular_file(p)) {
 
 		filenames.push_back(path);
+
+	} else if (boost::filesystem::is_symlink(p)) {
+
+		return getImageFiles(boost::filesystem::read_symlink(p).string());
+
+	} else {
+
+		LOG_ERROR(logger::out) << "no such file or directory: " << path << std::endl;
 	}
 
 	return filenames;
