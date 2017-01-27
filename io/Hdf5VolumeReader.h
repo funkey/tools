@@ -23,23 +23,39 @@ public:
 
 		// resolution
 		p[0] = p[1] = p[2] = 1.0;
-		if (_hdfFile.existsAttribute(dataset, "resolution"))
-			_hdfFile.readAttribute(
-					dataset,
-					"resolution",
-					p);
-		// resolution is stored as (z,y,x) to conform to how dataset is stored
-		volume.setResolution(p[2], p[1], p[0]);
+
+		try {
+
+			if (_hdfFile.existsAttribute(dataset, "resolution"))
+				_hdfFile.readAttribute(
+						dataset,
+						"resolution",
+						p);
+			// resolution is stored as (z,y,x) to conform to how dataset is stored
+			volume.setResolution(p[2], p[1], p[0]);
+
+		} catch (std::exception& e) {
+
+			LOG_ERROR(logger::out) << "failed to read resolution attribute" << std::endl;
+		}
 
 		// offset
 		p[0] = p[1] = p[2] = 0.0;
-		if (_hdfFile.existsAttribute(dataset, "offset"))
-			_hdfFile.readAttribute(
-					dataset,
-					"offset",
-					p);
-		// offset is stored as (z,y,x) to conform to how dataset is stored
-		volume.setOffset(p[2], p[1], p[0]);
+
+		try {
+
+			if (_hdfFile.existsAttribute(dataset, "offset"))
+				_hdfFile.readAttribute(
+						dataset,
+						"offset",
+						p);
+			// offset is stored as (z,y,x) to conform to how dataset is stored
+			volume.setOffset(p[2], p[1], p[0]);
+
+		} catch (std::exception& e) {
+
+			LOG_ERROR(logger::out) << "failed to read offset attribute" << std::endl;
+		}
 	}
 
 private:
