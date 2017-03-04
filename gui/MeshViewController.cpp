@@ -2,6 +2,7 @@
 #include <sg_gui/MarchingCubes.h>
 #include <util/ProgramOptions.h>
 #include <util/Logger.h>
+#include <fstream>
 
 logger::LogChannel meshviewcontrollerlog("meshviewcontrollerlog", "[MeshViewController] ");
 
@@ -65,6 +66,14 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 			return;
 		}
 	}
+
+	if (signal.key == sg_gui::keys::F8) {
+
+		LOG_USER(meshviewcontrollerlog) << "exporting currently visible meshes" << std::endl;
+
+		for (unsigned int id : _meshes->getMeshIds())
+			exportMesh(id);
+	}
 }
 
 void
@@ -99,3 +108,26 @@ MeshViewController::removeMesh(float label) {
 	_meshes->remove(label);
 }
 
+void
+MeshViewController::exportMesh(unsigned int id) {
+
+	std::stringstream filename;
+	filename << "mesh_" << id << ".raw";
+
+	std::ofstream file(filename.str().c_str());
+	std::shared_ptr<sg_gui::Mesh> mesh = _meshes->get(id);
+
+	for (int i = 0; i < mesh->getNumTriangles(); i++) {
+
+		const sg_gui::Triangle& triangle = mesh->getTriangle(i);
+
+		for (const sg_gui::Point3d& v : {
+				mesh->getVertex(triangle.v0),
+				mesh->getVertex(triangle.v1),
+				mesh->getVertex(triangle.v2) }) {
+
+			file << v.x() << " " << v.y() << " " << v.z() << " ";
+		}
+		file << std::endl;
+	}
+}

@@ -77,6 +77,8 @@ private:
 
 	void removeMesh(float label);
 
+	void exportMesh(unsigned int id);
+
 	std::shared_ptr<ExplicitVolume<float>> _labels;
 
 	std::shared_ptr<sg_gui::Meshes> _meshes;
