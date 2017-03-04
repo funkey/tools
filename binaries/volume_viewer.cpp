@@ -90,7 +90,8 @@ class Recorder : public sg::Agent<
 public:
 
 	Recorder(std::shared_ptr<sg_gui::Window> window) :
-		_window(window) {}
+		_window(window),
+		_continuous(false) {}
 
 	void onSignal(sg_gui::ContentChanged& signal) {
 
