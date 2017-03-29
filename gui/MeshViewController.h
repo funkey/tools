@@ -6,6 +6,7 @@
 #include <sg_gui/MeshView.h>
 #include <sg_gui/Meshes.h>
 #include <sg_gui/KeySignals.h>
+#include <future>
 
 /**
  * A marching cubes adaptor that binarizes an explicit volume by reporting 1 for 
@@ -75,15 +76,21 @@ private:
 
 	void addMesh(float label);
 
+	void notifyMeshExtracted(std::shared_ptr<sg_gui::Mesh> mesh, float label);
+
 	void removeMesh(float label);
 
-	void exportMesh(unsigned int id);
+	void exportMeshes();
 
 	std::shared_ptr<ExplicitVolume<float>> _labels;
 
 	std::shared_ptr<sg_gui::Meshes> _meshes;
 
 	std::map<float, std::shared_ptr<sg_gui::Mesh>> _meshCache;
+
+	std::vector<std::future<std::shared_ptr<sg_gui::Mesh>>> _highresMeshFutures;
+
+	float _minCubeSize;
 };
 
 #endif // CANDIDATE_MC_GUI_MESH_VIEW_CONTROLLER_H__

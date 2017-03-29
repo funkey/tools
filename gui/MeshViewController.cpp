@@ -3,6 +3,7 @@
 #include <util/ProgramOptions.h>
 #include <util/Logger.h>
 #include <fstream>
+#include <thread>
 
 logger::LogChannel meshviewcontrollerlog("meshviewcontrollerlog", "[MeshViewController] ");
 
@@ -13,7 +14,8 @@ util::ProgramOption optionCubeSize(
 
 MeshViewController::MeshViewController(std::shared_ptr<ExplicitVolume<float>> labels) :
 	_labels(labels),
-	_meshes(std::make_shared<sg_gui::Meshes>()) {}
+	_meshes(std::make_shared<sg_gui::Meshes>()),
+	_minCubeSize(optionCubeSize) {}
 
 void
 MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
@@ -32,16 +34,24 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 
 	LOG_DEBUG(meshviewcontrollerlog) << "selected label " << label << std::endl;
 
-	if (_meshes->contains(label)) {
+	bool meshesChanged = false;
+	{
+		LockGuard guard(*_meshes);
 
-		removeMesh(label);
+		if (_meshes->contains(label)) {
 
-	} else {
+			removeMesh(label);
+			meshesChanged = true;
 
-		addMesh(label);
+		} else {
+
+			// meshes are added asynchronously, meshesChanged not true yet
+			addMesh(label);
+		}
 	}
 
-	send<sg_gui::SetMeshes>(_meshes);
+	if (meshesChanged)
+		send<sg_gui::SetMeshes>(_meshes);
 }
 
 void
@@ -57,7 +67,10 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 		try {
 
 			float label = boost::lexical_cast<float>(input);
-			addMesh(label);
+			{
+				LockGuard guard(*_meshes);
+				addMesh(label);
+			}
 			send<sg_gui::SetMeshes>(_meshes);
 
 		} catch (std::exception& e) {
@@ -71,13 +84,14 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 
 		LOG_USER(meshviewcontrollerlog) << "exporting currently visible meshes" << std::endl;
 
-		for (unsigned int id : _meshes->getMeshIds())
-			exportMesh(id);
+		exportMeshes();
 	}
 }
 
 void
 MeshViewController::addMesh(float label) {
+
+	// _meshes locked by caller
 
 	LOG_USER(meshviewcontrollerlog) << "showing label " << label << std::endl;
 
@@ -88,46 +102,105 @@ MeshViewController::addMesh(float label) {
 	}
 
 	typedef ExplicitVolumeLabelAdaptor<ExplicitVolume<float>> Adaptor;
-	Adaptor adaptor(*_labels, label);
 
-	sg_gui::MarchingCubes<Adaptor> marchingCubes;
-	std::shared_ptr<sg_gui::Mesh> mesh = marchingCubes.generateSurface(
-			adaptor,
-			sg_gui::MarchingCubes<Adaptor>::AcceptAbove(0),
-			optionCubeSize,
-			optionCubeSize,
-			optionCubeSize);
-	_meshes->add(label, mesh);
+	for (float downsample : {32, 16, 8, 4, 2, 1}) {
 
-	_meshCache[label] = mesh;
+		auto extractMesh = 
+				std::packaged_task<std::shared_ptr<sg_gui::Mesh>()>(
+						[this, label, downsample]() {
+
+							Adaptor adaptor(*this->_labels, label);
+							float cubeSize = this->_minCubeSize*downsample;
+
+							sg_gui::MarchingCubes<Adaptor> marchingCubes;
+							std::shared_ptr<sg_gui::Mesh> mesh = marchingCubes.generateSurface(
+									adaptor,
+									sg_gui::MarchingCubes<Adaptor>::AcceptAbove(0),
+									cubeSize,
+									cubeSize,
+									cubeSize);
+
+							this->notifyMeshExtracted(mesh, label);
+
+							return mesh;
+						}
+				);
+
+		if (downsample == 1)
+			_highresMeshFutures.push_back(extractMesh.get_future());
+
+		std::thread(std::move(extractMesh)).detach();
+	}
+}
+
+void
+MeshViewController::notifyMeshExtracted(std::shared_ptr<sg_gui::Mesh> mesh, float label) {
+
+	{
+		LockGuard guard(*_meshes);
+
+		// don't replace existing mesh with lower resolution mesh
+		if (_meshes->contains(label))
+			if (_meshes->get(label)->getNumVertices() > mesh->getNumVertices())
+				return;
+
+		_meshes->add(label, mesh);
+		_meshCache[label] = mesh;
+	}
+
+	send<sg_gui::SetMeshes>(_meshes);
 }
 
 void
 MeshViewController::removeMesh(float label) {
 
+	// _meshes locked by caller
+
 	_meshes->remove(label);
 }
 
 void
-MeshViewController::exportMesh(unsigned int id) {
+MeshViewController::exportMeshes() {
 
-	std::stringstream filename;
-	filename << "mesh_" << id << ".raw";
+	std::vector<unsigned int> currentMeshIds;
+	std::vector<std::future<std::shared_ptr<sg_gui::Mesh>>> pendingFutures;
 
-	std::ofstream file(filename.str().c_str());
-	std::shared_ptr<sg_gui::Mesh> mesh = _meshes->get(id);
+	{
+		LockGuard guard(*_meshes);
 
-	for (int i = 0; i < mesh->getNumTriangles(); i++) {
+		// get IDs of currently visible meshes
+		currentMeshIds = _meshes->getMeshIds();
 
-		const sg_gui::Triangle& triangle = mesh->getTriangle(i);
+		// get all currently pending high-res mesh futures
+		std::swap(pendingFutures, _highresMeshFutures);
+	}
 
-		for (const sg_gui::Point3d& v : {
-				mesh->getVertex(triangle.v0),
-				mesh->getVertex(triangle.v1),
-				mesh->getVertex(triangle.v2) }) {
+	// make sure all pending high-res meshes are done
+	for (auto& future : pendingFutures)
+		future.get();
 
-			file << v.x() << " " << v.y() << " " << v.z() << " ";
+	LockGuard guard(*_meshes);
+
+	for (int id : currentMeshIds) {
+
+		std::stringstream filename;
+		filename << "mesh_" << id << ".raw";
+
+		std::ofstream file(filename.str().c_str());
+		std::shared_ptr<sg_gui::Mesh> mesh = _meshes->get(id);
+
+		for (int i = 0; i < mesh->getNumTriangles(); i++) {
+
+			const sg_gui::Triangle& triangle = mesh->getTriangle(i);
+
+			for (const sg_gui::Point3d& v : {
+					mesh->getVertex(triangle.v0),
+					mesh->getVertex(triangle.v1),
+					mesh->getVertex(triangle.v2) }) {
+
+				file << v.x() << " " << v.y() << " " << v.z() << " ";
+			}
+			file << std::endl;
 		}
-		file << std::endl;
 	}
 }
