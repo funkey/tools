@@ -176,7 +176,7 @@ SkeletonView::updateRecording() {
 
 		auto skeleton = _visibleSkeletons->get(id);
 		unsigned char r, g, b;
-		sg_gui::idToRgb(id, r, g, b);
+		sg_gui::idToRgb(id+1, r, g, b);
 		glColor4f(
 				static_cast<float>(r)/200.0,
 				static_cast<float>(g)/200.0,
