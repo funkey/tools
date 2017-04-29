@@ -8,7 +8,7 @@
 #include <imageprocessing/Skeleton.h>
 #include <imageprocessing/Skeletons.h>
 #include <gui/OverlayView.h>
-#include <gui/MeshViewController.h>
+#include <gui/SegmentController.h>
 #include <gui/SkeletonView.h>
 #include <sg_gui/MeshView.h>
 #include <sg_gui/RotateView.h>
@@ -174,8 +174,8 @@ int main(int argc, char** argv) {
 		// visualize
 
 		auto overlayView        = std::make_shared<OverlayView>();
-		auto meshView           = std::make_shared<MeshView>();
-		auto meshViewController = std::make_shared<MeshViewController>(overlay);
+		auto meshView           = std::make_shared<MeshView>(overlay);
+		auto segmentController  = std::make_shared<SegmentController>(overlay);
 		auto skeletonView       = std::make_shared<SkeletonView>();
 		auto rotateView         = std::make_shared<RotateView>();
 		auto zoomView           = std::make_shared<ZoomView>(true);
@@ -190,11 +190,11 @@ int main(int argc, char** argv) {
 		overlayView->setRawVolume(volume);
 		overlayView->setLabelsVolume(overlay);
 		overlayView->add(meshView);
-		overlayView->add(meshViewController);
+		overlayView->add(segmentController);
 
 		if (skeletons->size() > 0) {
 
-			rotateView->add(skeletonView);
+			overlayView->add(skeletonView);
 			skeletonView->setSkeletons(skeletons);
 		}
 

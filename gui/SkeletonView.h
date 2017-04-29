@@ -8,6 +8,7 @@
 #include <sg_gui/GuiSignals.h>
 #include <sg_gui/MouseSignals.h>
 #include <sg_gui/KeySignals.h>
+#include <sg_gui/SegmentSignals.h>
 #include <sg_gui/RecordableView.h>
 #include <sg_gui/Sphere.h>
 
@@ -36,7 +37,9 @@ class SkeletonView :
 						sg_gui::QuerySize,
 						sg_gui::MouseDown,
 						sg_gui::KeyDown,
-						SetSkeletons
+						SetSkeletons,
+						sg_gui::ShowSegment,
+						sg_gui::HideSegment
 				>,
 				sg::Provides<
 						sg_gui::ContentChanged
@@ -70,6 +73,10 @@ public:
 
 	void onSignal(SetSkeletons& signal);
 
+	void onSignal(sg_gui::ShowSegment& signal);
+
+	void onSignal(sg_gui::HideSegment& signal);
+
 private:
 
 	void updateRecording();
@@ -83,6 +90,7 @@ private:
 	void findClosestEdge(const util::ray<float,3>& ray);
 
 	std::shared_ptr<Skeletons> _skeletons;
+	std::shared_ptr<Skeletons> _visibleSkeletons;
 
 	std::vector<std::shared_ptr<SkeletonEdgeMatchScores>> _edgeMatchScores;
 

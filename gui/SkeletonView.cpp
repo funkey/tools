@@ -5,6 +5,8 @@
 #include <util/Logger.h>
 #include <util/geometry.hpp>
 
+logger::LogChannel skeletonviewlog("skeletonviewlog", "[SkeletonView] ");
+
 util::ProgramOption optionSkeletonSphereScale(
 		util::_module           = "gui",
 		util::_long_name        = "skeletonSphereScale",
@@ -12,6 +14,7 @@ util::ProgramOption optionSkeletonSphereScale(
 		util::_default_value    = 1.0);
 
 SkeletonView::SkeletonView() :
+	_visibleSkeletons(std::make_shared<Skeletons>()),
 	_currentScoreIndex(0),
 	_invertScores(false),
 	_showFocus(false),
@@ -30,6 +33,7 @@ void
 SkeletonView::setSkeletons(std::shared_ptr<Skeletons> skeletons) {
 
 	_skeletons = skeletons;
+	_visibleSkeletons->clear();
 
 	updateRecording();
 	send<sg_gui::ContentChanged>();
@@ -38,17 +42,11 @@ SkeletonView::setSkeletons(std::shared_ptr<Skeletons> skeletons) {
 void
 SkeletonView::onSignal(sg_gui::Draw& /*draw*/) {
 
-	if (!_skeletons)
-		return;
-
 	draw();
 }
 
 void
 SkeletonView::onSignal(sg_gui::DrawTranslucent& /*draw*/) {
-
-	if (!_skeletons)
-		return;
 
 	drawTranslucent();
 }
@@ -56,10 +54,7 @@ SkeletonView::onSignal(sg_gui::DrawTranslucent& /*draw*/) {
 void
 SkeletonView::onSignal(sg_gui::QuerySize& signal) {
 
-	if (!_skeletons)
-		return;
-
-	signal.setSize(_skeletons->getBoundingBox());
+	signal.setSize(_visibleSkeletons->getBoundingBox());
 }
 
 void
@@ -145,15 +140,41 @@ SkeletonView::onSignal(SetSkeletons& signal) {
 }
 
 void
+SkeletonView::onSignal(sg_gui::ShowSegment& signal) {
+
+	LOG_DEBUG(skeletonviewlog) << "showing skeleton for " << signal.getId() << std::endl;
+
+	if (!_skeletons || !_skeletons->contains(signal.getId())) {
+
+		LOG_DEBUG(skeletonviewlog) << "don't have a skeleton for this ID" << std::endl;
+		return;
+	}
+
+	_visibleSkeletons->add(signal.getId(), _skeletons->get(signal.getId()));
+
+	updateRecording();
+	send<sg_gui::ContentChanged>();
+}
+
+void
+SkeletonView::onSignal(sg_gui::HideSegment& signal) {
+
+	_visibleSkeletons->remove(signal.getId());
+
+	updateRecording();
+	send<sg_gui::ContentChanged>();
+}
+
+void
 SkeletonView::updateRecording() {
 
 	sg_gui::OpenGl::Guard guard;
 
 	startRecording();
 
-	for (unsigned int id : _skeletons->getSkeletonIds()) {
+	for (unsigned int id : _visibleSkeletons->getSkeletonIds()) {
 
-		auto skeleton = _skeletons->get(id);
+		auto skeleton = _visibleSkeletons->get(id);
 		unsigned char r, g, b;
 		sg_gui::idToRgb(id, r, g, b);
 		glColor4f(
@@ -324,9 +345,9 @@ SkeletonView::findClosestEdge(const util::ray<float,3>& ray) {
 
 	float minSkeletonDistance = std::numeric_limits<float>::max();
 
-	for (unsigned int id : _skeletons->getSkeletonIds()) {
+	for (unsigned int id : _visibleSkeletons->getSkeletonIds()) {
 
-		const Skeleton& skeleton = *_skeletons->get(id);
+		const Skeleton& skeleton = *_visibleSkeletons->get(id);
 
 		float minDistance = std::numeric_limits<float>::max();
 		Skeleton::Graph::Edge bestEdge;
@@ -359,7 +380,7 @@ SkeletonView::findClosestEdge(const util::ray<float,3>& ray) {
 		if (minDistance < minSkeletonDistance) {
 
 			minSkeletonDistance = minDistance;
-			closestSkeleton = _skeletons->get(id);
+			closestSkeleton = _visibleSkeletons->get(id);
 			closestSkeletonId = id;
 			closestEdge = bestEdge;
 		}

@@ -7,7 +7,7 @@
 #include <imageprocessing/Skeleton.h>
 #include <imageprocessing/Skeletons.h>
 #include <gui/OverlayView.h>
-#include <gui/MeshViewController.h>
+#include <gui/SegmentController.h>
 #include <gui/SkeletonView.h>
 #include <sg_gui/RotateView.h>
 #include <sg_gui/ZoomView.h>
