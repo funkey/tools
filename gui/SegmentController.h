@@ -32,6 +32,8 @@ private:
 
 	void toggleSegment(unsigned int id);
 
+	void showAllSegments();
+
 	std::shared_ptr<ExplicitVolume<float>> _labels;
 
 	std::set<unsigned int> _visibleSegments;

@@ -36,15 +36,22 @@ SegmentController::onSignal(sg_gui::KeyDown& signal) {
 		char input[256];
 		std::cin.getline(input, 256);
 
-		try {
+		if (std::string(input) == "all") {
 
-			unsigned int label = boost::lexical_cast<unsigned int>(input);
-			toggleSegment(label);
+			showAllSegments();
 
-		} catch (std::exception& e) {
+		} else {
 
-			LOG_ERROR(segmentcontrollerlog) << "invalid input" << std::endl;
-			return;
+			try {
+
+				unsigned int label = boost::lexical_cast<unsigned int>(input);
+				toggleSegment(label);
+
+			} catch (std::exception& e) {
+
+				LOG_ERROR(segmentcontrollerlog) << "invalid input" << std::endl;
+				return;
+			}
 		}
 	}
 
@@ -65,6 +72,22 @@ SegmentController::toggleSegment(unsigned int id) {
 		_visibleSegments.erase(id);
 
 	} else {
+
+		send<sg_gui::ShowSegment>(id);
+		_visibleSegments.insert(id);
+	}
+}
+
+void
+SegmentController::showAllSegments() {
+
+	std::set<unsigned int> allIds;
+	for (unsigned int id : _labels->data())
+		allIds.insert(id);
+
+	LOG_USER(segmentcontrollerlog) << "showing " << allIds.size() << " meshes..." << std::endl;
+
+	for (unsigned int id : allIds) {
 
 		send<sg_gui::ShowSegment>(id);
 		_visibleSegments.insert(id);

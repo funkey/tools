@@ -82,54 +82,18 @@ void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
 	}
 }
 
-class Recorder : public sg::Agent<
-		 Recorder,
-		 sg::Accepts<sg_gui::ContentChanged, sg_gui::KeyDown>
+class ExtractAllMeshes : public sg::Scope<
+		 ExtractAllMeshes,
+		 sg::ProvidesInner<sg_gui::KeyDown>
 > {
 
 public:
 
-	Recorder(std::shared_ptr<sg_gui::Window> window) :
-		_window(window),
-		_continuous(false) {}
+	void run() {
 
-	void onSignal(sg_gui::ContentChanged& signal) {
-
-		if (_continuous)
-			_window->requestNextFrameSave();
+		sendInner<sg_gui::KeyDown>(sg_gui::keys::I, sg_gui::Modifiers::NoModifier);
+		sendInner<sg_gui::KeyDown>(sg_gui::keys::F8, sg_gui::Modifiers::NoModifier);
 	}
-
-	void onSignal(sg_gui::KeyDown& signal) {
-
-		if (signal.key == keys::F5) {
-
-			if (_continuous) {
-
-				std::cout << "[Recorder] stopping recording" << std::endl;
-				_continuous = false;
-				return;
-			}
-
-
-			if (signal.modifiers & keys::ShiftDown) {
-
-				std::cout << "[Recorder] starting recording" << std::endl;
-				_continuous = true;
-
-			} else {
-
-				std::cout << "[Recorder] taking screenshot" << std::endl;
-			}
-
-			_window->saveFrame();
-		}
-	}
-
-private:
-
-	std::shared_ptr<sg_gui::Window> _window;
-
-	bool _continuous;
 };
 
 int main(int argc, char** argv) {
@@ -173,32 +137,18 @@ int main(int argc, char** argv) {
 
 		// visualize
 
+		auto extractAllMeshes   = std::make_shared<ExtractAllMeshes>();
 		auto overlayView        = std::make_shared<OverlayView>();
 		auto meshView           = std::make_shared<MeshView>(overlay);
 		auto segmentController  = std::make_shared<SegmentController>(overlay);
-		auto skeletonView       = std::make_shared<SkeletonView>();
-		auto rotateView         = std::make_shared<RotateView>();
-		auto zoomView           = std::make_shared<ZoomView>(true);
-		auto window             = std::make_shared<sg_gui::Window>("volume_viewer");
-		auto recorder           = std::make_shared<Recorder>(window);
 
-		window->add(zoomView);
-		window->add(recorder);
-		zoomView->add(rotateView);
-
-		rotateView->add(overlayView);
 		overlayView->setRawVolume(volume);
 		overlayView->setLabelsVolume(overlay);
 		overlayView->add(meshView);
 		overlayView->add(segmentController);
+		extractAllMeshes->add(overlayView);
 
-		if (skeletons->size() > 0) {
-
-			overlayView->add(skeletonView);
-			skeletonView->setSkeletons(skeletons);
-		}
-
-		window->processEvents();
+		extractAllMeshes->run();
 
 	} catch (boost::exception& e) {
 
