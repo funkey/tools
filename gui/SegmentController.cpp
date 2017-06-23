@@ -110,7 +110,7 @@ SegmentController::showLargestSegments(size_t k) {
 			const std::pair<uint64_t, size_t>& a,
 			const std::pair<uint64_t, size_t>& b) {
 
-		return a.second > b.second;
+		return a.second < b.second;
 	};
 
 	std::priority_queue<std::pair<uint64_t, size_t>, std::vector<std::pair<uint64_t, size_t>>, decltype(sort)> queue(sort);
