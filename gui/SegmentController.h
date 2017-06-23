@@ -32,6 +32,10 @@ private:
 
 	void toggleSegment(uint64_t id);
 
+	void showAllSegments();
+
+	void showLargestSegments(size_t k);
+
 	std::shared_ptr<ExplicitVolume<uint64_t>> _labels;
 
 	std::set<uint64_t> _visibleSegments;
