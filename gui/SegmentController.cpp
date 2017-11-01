@@ -1,6 +1,7 @@
 #include <queue>
 #include "SegmentController.h"
 #include <util/Logger.h>
+#include <util/string.h>
 
 logger::LogChannel segmentcontrollerlog("segmentcontrollerlog", "[SegmentController] ");
 
@@ -34,8 +35,8 @@ SegmentController::onSignal(sg_gui::KeyDown& signal) {
 
 		LOG_USER(segmentcontrollerlog) << "enter label to show (or 'all' or 'largest <k>'): " << std::endl;
 
-		char input[256];
-		std::cin.getline(input, 256);
+		char input[10000];
+		std::cin.getline(input, 10000);
 
 		if (std::string(input) == "all") {
 
@@ -50,7 +51,13 @@ SegmentController::onSignal(sg_gui::KeyDown& signal) {
 
 			try {
 
-				uint64_t label = boost::lexical_cast<uint64_t>(input);
+				std::vector<std::string> tokens = split(input, ',');
+
+				for (auto& token : tokens) {
+
+					uint64_t label = boost::lexical_cast<uint64_t>(token);
+					toggleSegment(label);
+				}
 
 			} catch (std::exception& e) {
 
