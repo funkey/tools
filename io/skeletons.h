@@ -27,13 +27,13 @@ int getMaxPrecision(const std::vector<float>& values) {
 	return maxPrecision;
 }
 
-size_t readSkeleton(const std::string& filename, Skeleton& skeleton) {
+uint64_t readSkeleton(const std::string& filename, Skeleton& skeleton) {
 
 	std::ifstream file(filename);
 
 	std::string token;
 	int numNodes = 0;
-	size_t id = 1;
+	uint64_t id = 1;
 
 	while (file.good()) {
 

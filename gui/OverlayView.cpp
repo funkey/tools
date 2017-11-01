@@ -26,9 +26,9 @@ OverlayView::setRawVolume(std::shared_ptr<ExplicitVolume<float>> volume) {
 }
 
 void
-OverlayView::setLabelsVolume(std::shared_ptr<ExplicitVolume<float>> volume) {
+OverlayView::setLabelsVolume(std::shared_ptr<ExplicitVolume<uint64_t>> volume) {
 
-	_labelsView->setVolume(volume);
+	//_labelsView->setVolume(volume);
 }
 
 void

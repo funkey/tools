@@ -172,7 +172,7 @@ SkeletonView::updateRecording() {
 
 	startRecording();
 
-	for (unsigned int id : _visibleSkeletons->getSkeletonIds()) {
+	for (uint64_t id : _visibleSkeletons->getSkeletonIds()) {
 
 		auto skeleton = _visibleSkeletons->get(id);
 		unsigned char r, g, b;
@@ -340,12 +340,12 @@ void
 SkeletonView::findClosestEdge(const util::ray<float,3>& ray) {
 
 	std::shared_ptr<Skeleton> closestSkeleton;
-	unsigned int closestSkeletonId;
+	uint64_t closestSkeletonId;
 	Skeleton::Graph::Edge closestEdge;
 
 	float minSkeletonDistance = std::numeric_limits<float>::max();
 
-	for (unsigned int id : _visibleSkeletons->getSkeletonIds()) {
+	for (uint64_t id : _visibleSkeletons->getSkeletonIds()) {
 
 		const Skeleton& skeleton = *_visibleSkeletons->get(id);
 
