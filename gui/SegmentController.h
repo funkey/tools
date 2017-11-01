@@ -22,7 +22,7 @@ class SegmentController :
 
 public:
 
-	SegmentController(std::shared_ptr<ExplicitVolume<float>> labels);
+	SegmentController(std::shared_ptr<ExplicitVolume<uint64_t>> labels);
 
 	void onSignal(sg_gui::VolumePointSelected& signal);
 
@@ -30,11 +30,11 @@ public:
 
 private:
 
-	void toggleSegment(unsigned int id);
+	void toggleSegment(uint64_t id);
 
-	std::shared_ptr<ExplicitVolume<float>> _labels;
+	std::shared_ptr<ExplicitVolume<uint64_t>> _labels;
 
-	std::set<unsigned int> _visibleSegments;
+	std::set<uint64_t> _visibleSegments;
 };
 
 #endif // CANDIDATE_MC_GUI_SEGMENT_CONTROLLER_H__

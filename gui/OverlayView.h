@@ -29,7 +29,7 @@ public:
 
 	void setRawVolume(std::shared_ptr<ExplicitVolume<float>> volume);
 
-	void setLabelsVolume(std::shared_ptr<ExplicitVolume<float>> volume);
+	void setLabelsVolume(std::shared_ptr<ExplicitVolume<uint64_t>> volume);
 
 	void onSignal(sg_gui::KeyDown& signal);
 

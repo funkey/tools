@@ -56,7 +56,8 @@ util::ProgramOption optionSkeleton(
 		util::_long_name        = "skeleton",
 		util::_description_text = "Paths to a files containing skeletons to show. Files are separated by colons.");
 
-void readVolumeFromOption(ExplicitVolume<float>& volume, std::string option) {
+template <typename T>
+void readVolumeFromOption(ExplicitVolume<T>& volume, std::string option) {
 
 	// hdf file given?
 	size_t sepPos = option.find_first_of(":");
@@ -142,7 +143,7 @@ int main(int argc, char** argv) {
 		// read volume and overlay
 
 		auto volume  = std::make_shared<ExplicitVolume<float>>();
-		auto overlay = std::make_shared<ExplicitVolume<float>>();
+		auto overlay = std::make_shared<ExplicitVolume<uint64_t>>();
 		auto skeletons = std::make_shared<Skeletons>();
 
 		if (optionVolume)

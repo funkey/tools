@@ -3,7 +3,7 @@
 
 logger::LogChannel segmentcontrollerlog("segmentcontrollerlog", "[SegmentController] ");
 
-SegmentController::SegmentController(std::shared_ptr<ExplicitVolume<float>> labels) :
+SegmentController::SegmentController(std::shared_ptr<ExplicitVolume<uint64_t>> labels) :
 	_labels(labels) {}
 
 void
@@ -16,7 +16,7 @@ SegmentController::onSignal(sg_gui::VolumePointSelected& signal) {
 			signal.position().z(),
 			x, y, z);
 
-	float label = (*_labels)(x, y, z);
+	uint64_t label = (*_labels)(x, y, z);
 
 	if (label == 0)
 		return;
@@ -38,7 +38,7 @@ SegmentController::onSignal(sg_gui::KeyDown& signal) {
 
 		try {
 
-			unsigned int label = boost::lexical_cast<unsigned int>(input);
+			uint64_t label = boost::lexical_cast<uint64_t>(input);
 			toggleSegment(label);
 
 		} catch (std::exception& e) {
@@ -50,14 +50,14 @@ SegmentController::onSignal(sg_gui::KeyDown& signal) {
 
 	if (signal.key == sg_gui::keys::C) {
 
-		for (unsigned int id : _visibleSegments)
+		for (uint64_t id : _visibleSegments)
 			send<sg_gui::HideSegment>(id);
 		_visibleSegments.clear();
 	}
 }
 
 void
-SegmentController::toggleSegment(unsigned int id) {
+SegmentController::toggleSegment(uint64_t id) {
 
 	if (_visibleSegments.count(id)) {
 
